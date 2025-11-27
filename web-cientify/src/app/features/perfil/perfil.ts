@@ -334,17 +334,57 @@ export class Perfil implements OnInit, OnDestroy {
   }
 
   loadSavedPosts() {
-    const saved = localStorage.getItem('savedPosts');
-    if (saved) {
+    // El feed guarda 'savedPostIds' con los IDs de los posts guardados
+    const savedPostIds = localStorage.getItem('savedPostIds');
+
+    if (savedPostIds) {
       try {
-        const savedArray = JSON.parse(saved);
-        this.savedPosts = Array.isArray(savedArray) ? savedArray : [];
+        const postIds: string[] = JSON.parse(savedPostIds);
+
+        if (postIds.length > 0) {
+          // Cargar todos los posts para filtrar por IDs guardados
+          this.postService.list().subscribe({
+            next: (response: any) => {
+              const allPosts = response.posts || [];
+              this.savedPosts = allPosts.filter((p: any) => postIds.includes(p._id));
+              console.log('Posts guardados cargados:', this.savedPosts.length);
+            },
+            error: (err: any) => {
+              console.error('Error loading saved posts from backend:', err);
+              // Fallback: intentar cargar directamente del localStorage
+              const saved = localStorage.getItem('savedPosts');
+              if (saved) {
+                try {
+                  const savedArray = JSON.parse(saved);
+                  this.savedPosts = Array.isArray(savedArray) ? savedArray : [];
+                } catch (e) {
+                  console.error('Error parsing saved posts:', e);
+                  this.savedPosts = [];
+                }
+              }
+            }
+          });
+        } else {
+          this.savedPosts = [];
+        }
       } catch (e) {
-        console.error('Error parsing saved posts:', e);
+        console.error('Error parsing saved post IDs:', e);
         this.savedPosts = [];
       }
     } else {
-      this.savedPosts = [];
+      // Fallback: intentar cargar directamente del localStorage
+      const saved = localStorage.getItem('savedPosts');
+      if (saved) {
+        try {
+          const savedArray = JSON.parse(saved);
+          this.savedPosts = Array.isArray(savedArray) ? savedArray : [];
+        } catch (e) {
+          console.error('Error parsing saved posts:', e);
+          this.savedPosts = [];
+        }
+      } else {
+        this.savedPosts = [];
+      }
     }
   }
 
