@@ -1,9 +1,27 @@
 <div class="feed-container">
   <div class="feed-header">
     <h1>Feed Científico</h1>
-    <button class="btn btn-primary" (click)="showCreateForm = !showCreateForm">
-      {{ showCreateForm ? 'Cancelar' : '+ Nuevo Post' }}
-    </button>
+    <div class="header-actions">
+      <div class="filter-buttons">
+        <button
+          class="btn"
+          [class.active]="viewFilter === 'todos'"
+          (click)="setViewFilter('todos')"
+        >
+          Todos los Posts
+        </button>
+        <button
+          class="btn"
+          [class.active]="viewFilter === 'mios'"
+          (click)="setViewFilter('mios')"
+        >
+          Mis Posts
+        </button>
+      </div>
+      <button *ngIf="canCreate()" class="btn btn-primary" (click)="showCreateForm = !showCreateForm">
+        {{ showCreateForm ? 'Cancelar' : '+ Nuevo Post' }}
+      </button>
+    </div>
   </div>
 
   <!-- Formulario para crear post -->
@@ -102,7 +120,12 @@
 
   <!-- Lista de posts -->
   <div *ngIf="!loading && posts.length === 0" class="empty-state">
-    <p>No hay publicaciones aún. ¡Sé el primero en publicar!</p>
+    <p *ngIf="viewFilter === 'mios'">
+      No has publicado nada aún. ¡Crea tu primer post ahora!
+    </p>
+    <p *ngIf="viewFilter === 'todos'">
+      No hay publicaciones aún. ¡Sé el primero en publicar!
+    </p>
   </div>
 
   <div class="posts-list">
@@ -110,8 +133,16 @@
       <!-- Header del post -->
       <div class="post-header">
         <div class="post-author">
-          <div class="avatar">
-            {{ post.author?.nombre?.charAt(0)?.toUpperCase() || 'U' }}
+          <div class="avatar" [ngClass]="{ 'with-image': post.author?.avatarUrl }">
+            <img
+              *ngIf="post.author?.avatarUrl"
+              [src]="post.author.avatarUrl"
+              [alt]="post.author?.nombre"
+              class="avatar-img"
+            />
+            <span *ngIf="!post.author?.avatarUrl" class="avatar-initial">
+              {{ post.author?.nombre?.charAt(0)?.toUpperCase() || 'U' }}
+            </span>
           </div>
           <div class="author-info">
             <strong>{{ post.author?.nombre || 'Usuario' }}</strong>
@@ -121,6 +152,12 @@
         <div class="post-badge" *ngIf="post.author?.rol">
           <span class="badge badge-{{ post.author.rol }}">{{ post.author.rol }}</span>
         </div>
+        <div class="admin-controls" *ngIf="isAdmin()">
+          <button class="action-btn btn-danger" (click)="adminDelete(post)">Eliminar</button>
+          <button class="action-btn" (click)="adminTogglePublish(post)">{{ post.published ? 'Ocultar' : 'Mostrar' }}</button>
+        </div>
+        <!-- Mostrar estado oculto a admins -->
+        <div *ngIf="isAdmin() && !post.published" class="hidden-badge">OCULTO</div>
       </div>
 
       <!-- Contenido del post -->
@@ -129,7 +166,7 @@
         <h4 class="post-subtitle" *ngIf="post.subtitle">{{ post.subtitle }}</h4>
         <p class="post-summary" *ngIf="post.summary">{{ post.summary }}</p>
         <div class="post-body">{{ post.content }}</div>
-        
+
         <!-- Archivo adjunto -->
         <div *ngIf="post.fileUrl" class="post-file">
           <a [href]="post.fileUrl" target="_blank" class="file-link">
@@ -144,7 +181,7 @@
       </div>
 
       <!-- Acciones del post -->
-      <div class="post-actions">
+        <div class="post-actions">
         <button
           class="action-btn"
           [class.liked]="hasLiked(post)"
@@ -164,6 +201,7 @@
         >
           🔖 Guardar
         </button>
+        <button *ngIf="canEdit(post)" class="action-btn" (click)="startEditPost(post)">✏️ Editar</button>
       </div>
 
       <!-- Sección de comentarios -->
@@ -190,11 +228,19 @@
           <div *ngFor="let comment of commentsMap[post._id]" class="comment-item">
             <div class="comment-header">
               <div class="comment-author">
-                <div class="comment-avatar">
-                  {{ comment.author?.nombre?.charAt(0)?.toUpperCase() || 'U' }}
+                <div class="comment-avatar" [ngClass]="{ 'with-image': comment.author.avatarUrl }">
+                  <img
+                    *ngIf="comment.author.avatarUrl"
+                    [src]="comment.author.avatarUrl"
+                    [alt]="comment.author.nombre"
+                    class="avatar-img"
+                  />
+                  <span *ngIf="!comment.author.avatarUrl" class="avatar-initial">
+                    {{ comment.author.nombre.charAt(0).toUpperCase() }}
+                  </span>
                 </div>
                 <div>
-                  <strong>{{ comment.author?.nombre || 'Usuario' }}</strong>
+                  <strong>{{ comment.author.nombre }}</strong>
                   <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
                   <span *ngIf="comment.isEdited" class="edited-badge">(editado)</span>
                 </div>

@@ -67,6 +67,11 @@ export class PostService {
     return this.http.put<Post>(`${this.api}/update/${id}`, data);
   }
 
+  /** Toggle published state (admin) - accepts JSON { published: boolean } or FormData */
+  togglePublish(id: string, published: boolean): Observable<Post> {
+    return this.http.put<Post>(`${this.api}/update/${id}`, { published });
+  }
+
   delete(id: string): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.api}/remove/${id}`);
   }

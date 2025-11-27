@@ -1,1 +1,84 @@
-<p>navbar works!</p>
+<nav class="navbar">
+  <div class="navbar-container">
+    <!-- Logo/Brand -->
+    <div class="navbar-brand">
+      <a routerLink="/feed" class="logo">
+        🔬 Cientify
+      </a>
+    </div>
+
+    <!-- Nav Menu -->
+    <div class="nav-menu" [class.active]="menuOpen">
+      <!-- Authenticated Routes -->
+      <div *ngIf="isAuthenticated" class="nav-links">
+        <a routerLink="/feed" (click)="closeMenu()" class="nav-link">
+          📰 Feed
+        </a>
+        <a routerLink="/perfil" (click)="closeMenu()" class="nav-link">
+          👤 Perfil
+        </a>
+        <a routerLink="/cientifico" (click)="closeMenu()" class="nav-link">
+          👨‍🔬 Científicos
+        </a>
+      </div>
+
+      <!-- Guest Routes -->
+      <div *ngIf="!isAuthenticated" class="nav-links">
+        <a routerLink="/login" (click)="closeMenu()" class="nav-link">
+          🔐 Inicia Sesión
+        </a>
+        <a routerLink="/register" (click)="closeMenu()" class="nav-link">
+          📝 Regístrate
+        </a>
+      </div>
+    </div>
+
+    <!-- User Menu -->
+    <div *ngIf="isAuthenticated" class="user-menu">
+      <button class="user-menu-btn" (click)="toggleMenu()">
+        <div class="avatar" [ngStyle]="{ backgroundColor: getRolColor() }">
+          <img *ngIf="userAvatar" [src]="userAvatar" [alt]="userName" />
+          <span *ngIf="!userAvatar">{{ getInitials() }}</span>
+        </div>
+        <span class="username">{{ userName }}</span>
+      </button>
+
+      <div *ngIf="menuOpen" class="dropdown-menu">
+        <div class="dropdown-header">
+          <div class="user-info">
+            <div class="avatar-dropdown" [ngStyle]="{ backgroundColor: getRolColor() }">
+              <img *ngIf="userAvatar" [src]="userAvatar" [alt]="userName" />
+              <span *ngIf="!userAvatar">{{ getInitials() }}</span>
+            </div>
+            <div>
+              <p class="user-name">{{ userName }}</p>
+              <p class="user-role">{{ userRole | uppercase }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="dropdown-divider"></div>
+
+        <a routerLink="/perfil" (click)="closeMenu()" class="dropdown-item">
+          ✏️ Editar Perfil
+        </a>
+        <a routerLink="/feed" (click)="closeMenu()" class="dropdown-item">
+          📰 Mi Feed
+        </a>
+
+        <div class="dropdown-divider"></div>
+
+        <button (click)="logout()" class="dropdown-item logout-btn">
+          🚪 Cerrar Sesión
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu Toggle -->
+    <button class="menu-toggle" (click)="toggleMenu()" [class.active]="menuOpen">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </div>
+</nav>

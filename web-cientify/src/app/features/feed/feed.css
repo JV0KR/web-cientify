@@ -9,12 +9,46 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
 .feed-header h1 {
   margin: 0;
   color: #333;
   font-size: 32px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.filter-buttons .btn {
+  background: #f0f0f0;
+  color: #333;
+  border: 2px solid transparent;
+  padding: 10px 16px;
+  font-size: 14px;
+}
+
+.filter-buttons .btn:hover {
+  background: #e0e0e0;
+  transform: none;
+  box-shadow: none;
+}
+
+.filter-buttons .btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: #667eea;
 }
 
 .btn {
@@ -157,6 +191,28 @@ textarea.form-control {
   justify-content: center;
   font-weight: bold;
   font-size: 18px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.avatar.with-image, .comment-avatar.with-image {
+  background: none;
+  padding: 0;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.avatar-initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
 }
 
 .author-info {
@@ -261,6 +317,38 @@ textarea.form-control {
   gap: 15px;
   padding-top: 15px;
   border-top: 1px solid #eee;
+}
+
+.admin-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-controls .action-btn {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.btn-danger {
+  background: #e74c3c;
+  color: white;
+  border-radius: 6px;
+}
+
+.feed-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.hidden-badge {
+  margin-left: 12px;
+  padding: 4px 8px;
+  background: #ffb100;
+  color: #3a2f00;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 12px;
 }
 
 .action-btn {

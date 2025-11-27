@@ -1,10 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PostService, Post } from '../../core/services/post';
 import { CommentService, Comment } from '../../core/services/comment';
 import { UserService } from '../../core/services/user';
+import { UserStateService } from '../../core/services/user-state';
 import { Auth } from '../../auth/services/auth';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-feed',
@@ -13,11 +15,18 @@ import { Auth } from '../../auth/services/auth';
   templateUrl: './feed.html',
   styleUrl: './feed.css',
 })
-export class Feed implements OnInit {
+export class Feed implements OnInit, OnDestroy {
   posts: Post[] = [];
+  allPosts: Post[] = [];
   loading = false;
   currentUser: any = null;
-  
+  private destroy$ = new Subject<void>();
+  // edición en línea
+  editingPostId: string | null = null;
+
+  // Filtro de vista
+  viewFilter: 'todos' | 'mios' = 'todos';
+
   // Crear post
   showCreateForm = false;
   newPost = {
@@ -39,12 +48,49 @@ export class Feed implements OnInit {
     private postService: PostService,
     private commentService: CommentService,
     private userService: UserService,
+    private userStateService: UserStateService,
     private auth: Auth
   ) {}
 
   ngOnInit() {
     this.loadUserProfile();
+    this.subscribeToUserState();
     this.loadPosts();
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  subscribeToUserState() {
+    this.userStateService.user$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((user) => {
+        if (user) {
+          this.currentUser = user;
+          // Actualizar avatar en todos los posts del usuario actual
+          this.updateUserAvatarInPosts(user);
+        }
+      });
+  }
+
+  updateUserAvatarInPosts(user: any) {
+    const userId = user._id || user.id;
+    this.posts.forEach(post => {
+      if (post.author._id === userId) {
+        post.author.avatarUrl = user.avatarUrl;
+      }
+      // También actualizar en comentarios
+      const comments = this.commentsMap[post._id];
+      if (comments) {
+        comments.forEach(comment => {
+          if (comment.author._id === userId) {
+            comment.author.avatarUrl = user.avatarUrl;
+          }
+        });
+      }
+    });
   }
 
   loadUserProfile() {
@@ -60,16 +106,40 @@ export class Feed implements OnInit {
 
   loadPosts() {
     this.loading = true;
-    this.postService.list({ page: 1, limit: 20, published: true }).subscribe({
+    console.log('Cargando publicaciones...');
+    // Si es admin, cargar todos los posts (incluidos los ocultos). Si no, solo publicados.
+    const params: any = { page: 1, limit: 20 };
+    if (!this.isAdmin()) params.published = true;
+
+    this.postService.list(params).subscribe({
       next: (response) => {
-        this.posts = response.posts;
+        console.log('Publicaciones cargadas:', response.posts);
+        this.allPosts = response.posts;
+        this.applyFilter();
         this.loading = false;
       },
       error: (err) => {
-        console.error('Error loading posts:', err);
+        console.error('Error al cargar publicaciones:', err);
         this.loading = false;
       }
     });
+  }
+
+  applyFilter() {
+    console.log('Aplicando filtro:', this.viewFilter);
+    if (this.viewFilter === 'mios') {
+      const userId = this.currentUser?._id || this.currentUser?.id;
+      console.log('Filtrando publicaciones del usuario:', userId);
+      this.posts = this.allPosts.filter(post => post.author._id === userId);
+    } else {
+      this.posts = this.allPosts;
+    }
+    console.log('Publicaciones después del filtro:', this.posts);
+  }
+
+  setViewFilter(filter: 'todos' | 'mios') {
+    this.viewFilter = filter;
+    this.applyFilter();
   }
 
   onFileSelected(event: any) {
@@ -80,11 +150,49 @@ export class Feed implements OnInit {
   }
 
   createPost() {
+    // Verificar permisos antes de crear
+    if (!this.canCreate()) {
+      alert('No tienes permisos para crear contenido');
+      return;
+    }
     if (!this.newPost.title || !this.newPost.content) {
       alert('Título y contenido son obligatorios');
       return;
     }
+    // Si estamos editando un post existente
+    if (this.editingPostId) {
+      const updateData = new FormData();
+      updateData.append('title', this.newPost.title);
+      updateData.append('content', this.newPost.content);
+      if (this.newPost.subtitle) updateData.append('subtitle', this.newPost.subtitle);
+      if (this.newPost.summary) updateData.append('summary', this.newPost.summary);
+      if (this.newPost.tags) {
+        const tags = this.newPost.tags.split(',').map(t => t.trim()).filter(t => t);
+        tags.forEach(tag => updateData.append('tags', tag));
+      }
+      updateData.append('published', this.newPost.published.toString());
+      if (this.newPost.file) {
+        updateData.append('file', this.newPost.file);
+      }
 
+      this.postService.update(this.editingPostId, updateData).subscribe({
+        next: (updated) => {
+          const idx = this.allPosts.findIndex(p => p._id === updated._id);
+          if (idx !== -1) this.allPosts[idx] = updated;
+          this.applyFilter();
+          this.resetCreateForm();
+          this.showCreateForm = false;
+          this.editingPostId = null;
+        },
+        error: (err) => {
+          console.error('Error updating post:', err);
+          alert(err.error?.message || 'Error al actualizar el post');
+        }
+      });
+      return;
+    }
+
+    // Crear nuevo post
     const formData = new FormData();
     formData.append('title', this.newPost.title);
     formData.append('content', this.newPost.content);
@@ -101,7 +209,8 @@ export class Feed implements OnInit {
 
     this.postService.create(formData).subscribe({
       next: (post) => {
-        this.posts.unshift(post);
+        this.allPosts.unshift(post);
+        this.applyFilter();
         this.resetCreateForm();
         this.showCreateForm = false;
       },
@@ -110,6 +219,89 @@ export class Feed implements OnInit {
         alert(err.error?.message || 'Error al crear el post');
       }
     });
+  }
+
+  /** Roles y permisos */
+  private roleAllowedToCreate(): string[] {
+    // admin y los roles científicos (incluye investigador y profesor)
+    return ['admin', 'cientifico', 'investigador', 'profesor'];
+  }
+
+  isAdmin(): boolean {
+    const role = this.currentUser?.rol || this.currentUser?.role;
+    return role === 'admin';
+  }
+
+  canCreate(): boolean {
+    const role = this.currentUser?.rol || this.currentUser?.role;
+    return this.roleAllowedToCreate().includes(role);
+  }
+
+  /** Acciones administrativas */
+  adminDelete(post: Post) {
+    if (!this.isAdmin()) {
+      alert('Solo administradores pueden eliminar publicaciones');
+      return;
+    }
+    if (!confirm('¿Deseas eliminar esta publicación? Esta acción no se puede deshacer.')) return;
+    this.postService.delete(post._id).subscribe({
+      next: () => {
+        this.posts = this.posts.filter(p => p._id !== post._id);
+      },
+      error: (err) => {
+        console.error('Error eliminando post:', err);
+        alert('Error al eliminar la publicación');
+      }
+    });
+  }
+
+  adminTogglePublish(post: Post) {
+    if (!this.isAdmin()) {
+      alert('Solo administradores pueden ocultar/mostrar publicaciones');
+      return;
+    }
+    this.postService.togglePublish(post._id, !post.published).subscribe({
+      next: (updated) => {
+        const idx = this.posts.findIndex(p => p._id === post._id);
+        if (idx !== -1) this.posts[idx] = updated;
+      },
+      error: (err) => {
+        console.error('Error toggling publish:', err);
+        alert('Error al actualizar visibilidad de la publicación');
+      }
+    });
+  }
+
+  /** Edición: iniciar edición en el formulario */
+  startEditPost(post: Post) {
+    if (!this.canEdit(post)) {
+      alert('No tienes permiso para editar esta publicación');
+      return;
+    }
+    this.editingPostId = post._id;
+    this.showCreateForm = true;
+    this.newPost = {
+      title: post.title,
+      subtitle: post.subtitle || '',
+      summary: post.summary || '',
+      content: post.content,
+      tags: post.tags ? post.tags.join(', ') : '',
+      published: post.published,
+      file: null
+    };
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  cancelEditPost() {
+    this.editingPostId = null;
+    this.resetCreateForm();
+    this.showCreateForm = false;
+  }
+
+  canEdit(post: Post): boolean {
+    const userId = this.currentUser?._id || this.currentUser?.id;
+    if (!userId) return false;
+    return this.isAdmin() || post.author._id === userId;
   }
 
   resetCreateForm() {
@@ -163,7 +355,7 @@ export class Feed implements OnInit {
 
   toggleComments(postId: string) {
     this.showCommentsMap[postId] = !this.showCommentsMap[postId];
-    
+
     if (this.showCommentsMap[postId] && !this.commentsMap[postId]) {
       this.loadComments(postId);
     }

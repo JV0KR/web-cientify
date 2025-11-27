@@ -1,5 +1,18 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+export interface UserProfile {
+  _id: string;
+  nombre: string;
+  email: string;
+  rol: string;
+  bio?: string;
+  avatarUrl?: string;
+  createdAt?: Date;
+  followersCount?: number;
+  followingCount?: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
@@ -7,19 +20,33 @@ export class UserService {
 
   constructor(private http: HttpClient) {}
 
-  getProfile() {
-    return this.http.get(`${this.api}/profile`);
+  getProfile(): Observable<any> {
+    return this.http.get<any>(`${this.api}/profile`);
   }
 
-  updateProfile(data: any) {
-    return this.http.put(`${this.api}/profile`, data);
+  updateProfile(data: Partial<UserProfile>): Observable<any> {
+    return this.http.put<any>(`${this.api}/profile`, data);
   }
 
-  listUsers() {
-    return this.http.get(`${this.api}`);
+  updateProfileWithAvatar(formData: FormData): Observable<any> {
+    // No especificar Content-Type, dejar que el navegador lo maneje
+    return this.http.put<any>(`${this.api}/profile`, formData);
   }
 
-  follow(userId: string) {
-    return this.http.post(`${this.api}/${userId}/follow`, {});
+  listUsers(): Observable<any> {
+    return this.http.get<any>(`${this.api}`);
+  }
+
+  follow(userId: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.api}/${userId}/follow`, {});
+  }
+
+  unfollow(userId: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.api}/${userId}/unfollow`, {});
+  }
+
+  getUserById(userId: string): Observable<any> {
+    return this.http.get<any>(`${this.api}/${userId}`);
   }
 }
+
