@@ -16,10 +16,8 @@
 
   <!-- Perfil View -->
   <div *ngIf="!loading && user && !isEditing" class="profile-view">
-    <!-- Profile Header -->
+    <!-- Profile Header (no cover) -->
     <div class="profile-header">
-      <div class="profile-cover"></div>
-
       <div class="profile-info">
         <!-- Avatar -->
         <div class="avatar-container">
@@ -28,7 +26,6 @@
             <span *ngIf="!user.avatarUrl">{{ getInitials() }}</span>
           </div>
         </div>
-
         <!-- User Info -->
         <div class="user-info">
           <h1>{{ user.nombre }}</h1>
@@ -39,7 +36,6 @@
           <p class="bio" *ngIf="user.bio">{{ user.bio }}</p>
           <p class="joined-date">Miembro desde {{ formatDate(user.createdAt) }}</p>
         </div>
-
         <!-- Stats -->
         <div class="profile-stats">
           <div class="stat">
@@ -52,22 +48,138 @@
           </div>
         </div>
       </div>
-
       <!-- Action Buttons -->
       <div class="profile-actions">
-        <button class="btn btn-primary" (click)="toggleEdit()">
+        <button class="btn btn-secondary" (click)="toggleEdit()" title="Editar perfil">
           ✏️ Editar Perfil
         </button>
-        <button class="btn btn-danger" (click)="logout()">
+        <button class="btn btn-secondary" (click)="setActiveTab('settings')" title="Configuración">
+          ⚙️ Configuración
+        </button>
+        <button class="btn btn-danger" (click)="logout()" title="Cerrar sesión">
           🚪 Cerrar Sesión
         </button>
       </div>
     </div>
 
-    <!-- Tabs Section (Future: posts, guardados, etc) -->
-    <div class="profile-tabs">
-      <div class="tab-content">
-        <p class="placeholder">Aquí irán tus publicaciones...</p>
+    <!-- Tabs -->
+    <div class="profile-tabs-container">
+      <div class="profile-tabs-header">
+        <button
+          [class.active]="activeTab === 'posts'"
+          (click)="setActiveTab('posts')"
+          class="tab-button"
+        >
+          📝 Mis Posts
+        </button>
+        <button
+          [class.active]="activeTab === 'saved'"
+          (click)="setActiveTab('saved')"
+          class="tab-button"
+        >
+          💾 Guardados ({{ savedPosts.length }})
+        </button>
+      </div>
+
+      <!-- Posts Tab -->
+      <div class="profile-tabs-content" *ngIf="activeTab === 'posts'">
+        <div *ngIf="postsLoading" class="loading">
+          <p>Cargando posts...</p>
+        </div>
+        <div *ngIf="!postsLoading && userPosts.length === 0" class="empty-state">
+          <p>Aún no tienes posts. ¡Crea uno desde el Feed!</p>
+        </div>
+        <div *ngIf="!postsLoading && userPosts.length > 0" class="posts-grid">
+          <div *ngFor="let post of userPosts" class="post-card">
+            <div class="post-card-header">
+              <h3>{{ post.title }}</h3>
+              <span class="post-status" [class.published]="post.published">
+                {{ post.published ? '✓ Publicado' : '🔒 Borrador' }}
+              </span>
+            </div>
+            <p class="post-summary">{{ post.subtitle || post.summary }}</p>
+            <div class="post-meta">
+              <small class="post-date">{{ formatDate(post.createdAt) }}</small>
+              <div class="post-stats">
+                <span>❤️ {{ post.likes?.length || 0 }}</span>
+                <span>💾 {{ post.guardados?.length || 0 }}</span>
+              </div>
+            </div>
+            <div class="post-actions">
+              <button
+                class="btn btn-sm btn-secondary"
+                (click)="togglePublishPost(post)"
+                [title]="post.published ? 'Ocultar post' : 'Publicar post'"
+              >
+                {{ post.published ? '🔓' : '🔒' }} {{ post.published ? 'Ocultar' : 'Publicar' }}
+              </button>
+              <button
+                class="btn btn-sm btn-danger"
+                (click)="deletePost(post._id, post.title)"
+                title="Eliminar post"
+              >
+                🗑️ Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Saved Posts Tab -->
+      <div class="profile-tabs-content" *ngIf="activeTab === 'saved'">
+        <div *ngIf="savedPosts.length === 0" class="empty-state">
+          <p>Aún no has guardado ningún post.</p>
+        </div>
+        <div *ngIf="savedPosts.length > 0" class="posts-grid">
+          <div *ngFor="let post of savedPosts" class="post-card">
+            <div class="post-card-header">
+              <h3>{{ post.title }}</h3>
+              <span class="post-author">{{ post.author?.nombre || 'Anónimo' }}</span>
+            </div>
+            <p class="post-summary">{{ post.subtitle || post.summary }}</p>
+            <div class="post-meta">
+              <small class="post-date">{{ formatDate(post.createdAt) }}</small>
+              <div class="post-stats">
+                <span>❤️ {{ post.likes?.length || 0 }}</span>
+                <span>💾 {{ post.guardados?.length || 0 }}</span>
+              </div>
+            </div>
+            <div class="post-actions">
+              <button
+                class="btn btn-sm btn-danger"
+                (click)="unsavePost(post._id)"
+                title="Remover de guardados"
+              >
+                🗑️ Remover
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Tab -->
+      <div class="profile-tabs-content" *ngIf="activeTab === 'settings'">
+        <h2>Configuración de Cuenta</h2>
+        <form class="settings-form" (ngSubmit)="saveSettings()">
+          <div class="settings-group">
+            <label>
+              <input type="checkbox" [(ngModel)]="settings.darkMode" name="darkMode" />
+              🌙 Modo oscuro
+            </label>
+          </div>
+          <div class="settings-group">
+            <label>
+              <input type="checkbox" [(ngModel)]="settings.privateProfile" name="privateProfile" />
+              🔒 Perfil privado
+            </label>
+          </div>
+          <div class="settings-actions">
+            <button type="submit" class="btn btn-primary">Guardar configuración</button>
+          </div>
+        </form>
+        <div class="settings-status" *ngIf="settingsSaved">
+          <span class="alert alert-success">✓ Configuración guardada correctamente</span>
+        </div>
       </div>
     </div>
   </div>

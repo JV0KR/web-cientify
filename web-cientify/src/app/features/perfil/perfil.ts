@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { UserService } from '../../core/services/user';
 import { UserStateService } from '../../core/services/user-state';
 import { Auth } from '../../auth/services/auth';
+import { PostService, Post } from '../../core/services/post';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -36,6 +37,19 @@ export class Perfil implements OnInit, OnDestroy {
   avatarFile: File | null = null;
   avatarPreview: string | null = null;
 
+  // Posts y guardados
+  userPosts: any[] = [];
+  savedPosts: any[] = [];
+  activeTab: 'posts' | 'saved' | 'settings' = 'posts';
+  postsLoading = false;
+
+  // Configuración
+  settings = {
+    darkMode: false,
+    privateProfile: false
+  };
+  settingsSaved = false;
+
   // Formulario de edición
   editForm = {
     nombre: '',
@@ -47,21 +61,52 @@ export class Perfil implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(
-    private userService: UserService,
-    private userStateService: UserStateService,
-    private auth: Auth,
-    private router: Router
-  ) {}
-
   ngOnInit() {
     this.loadProfile();
+    this.loadSettings();
+    this.loadUserPosts();
+    this.loadSavedPosts();
   }
 
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
   }
+
+  loadSettings() {
+    const saved = localStorage.getItem('perfilSettings');
+    if (saved) {
+      try {
+        this.settings = JSON.parse(saved);
+        this.applyTheme();
+      } catch {}
+    }
+  }
+
+  saveSettings() {
+    localStorage.setItem('perfilSettings', JSON.stringify(this.settings));
+    this.settingsSaved = true;
+    this.applyTheme();
+    setTimeout(() => this.settingsSaved = false, 2000);
+  }
+
+  applyTheme() {
+    if (this.settings.darkMode) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+  }
+
+  constructor(
+    private userService: UserService,
+    private userStateService: UserStateService,
+    private auth: Auth,
+    private postService: PostService,
+    private router: Router
+  ) {}
+
+  // Removed duplicate ngOnInit and ngOnDestroy
 
   loadProfile() {
     this.loading = true;
@@ -268,6 +313,103 @@ export class Perfil implements OnInit, OnDestroy {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
+    });
+  }
+
+  loadUserPosts() {
+    this.postsLoading = true;
+    this.postService.list().subscribe({
+      next: (response: any) => {
+        const allPosts = response.posts || [];
+        this.userPosts = allPosts.filter((p: any) =>
+          p.author._id === this.user?._id || p.author.id === this.user?._id
+        );
+        this.postsLoading = false;
+      },
+      error: (err: any) => {
+        console.error('Error loading user posts:', err);
+        this.postsLoading = false;
+      }
+    });
+  }
+
+  loadSavedPosts() {
+    const saved = localStorage.getItem('savedPosts');
+    if (saved) {
+      try {
+        const savedArray = JSON.parse(saved);
+        this.savedPosts = Array.isArray(savedArray) ? savedArray : [];
+      } catch (e) {
+        console.error('Error parsing saved posts:', e);
+        this.savedPosts = [];
+      }
+    } else {
+      this.savedPosts = [];
+    }
+  }
+
+  setActiveTab(tab: 'posts' | 'saved' | 'settings') {
+    this.activeTab = tab;
+    // Refrescar posts guardados cuando se abre la pestaña
+    if (tab === 'saved') {
+      this.loadSavedPosts();
+    }
+    // Refrescar posts propios cuando se abre la pestaña
+    if (tab === 'posts') {
+      this.loadUserPosts();
+    }
+  }
+
+  // Post Management Methods
+  deletePost(postId: string, postTitle: string) {
+    if (!confirm(`¿Estás seguro de que quieres eliminar el post \"${postTitle}\"? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+    this.postService.delete(postId).subscribe({
+      next: () => {
+        this.userPosts = this.userPosts.filter(p => p._id !== postId);
+        this.success = 'Post eliminado correctamente';
+        setTimeout(() => this.success = '', 3000);
+      },
+      error: (err: any) => {
+        console.error('Error deleting post:', err);
+        this.error = err.error?.message || 'Error al eliminar el post';
+        setTimeout(() => this.error = '', 3000);
+      }
+    });
+  }
+
+  togglePublishPost(post: any) {
+    const newState = !post.published;
+    this.postService.togglePublish(post._id, newState).subscribe({
+      next: (updated: any) => {
+        const idx = this.userPosts.findIndex(p => p._id === post._id);
+        if (idx !== -1) {
+          this.userPosts[idx] = updated;
+        }
+        this.success = newState ? 'Post publicado correctamente' : 'Post ocultado correctamente';
+        setTimeout(() => this.success = '', 3000);
+      },
+      error: (err: any) => {
+        console.error('Error toggling publish:', err);
+        this.error = err.error?.message || 'Error al cambiar visibilidad del post';
+        setTimeout(() => this.error = '', 3000);
+      }
+    });
+  }
+
+  unsavePost(postId: string) {
+    this.postService.toggleSave(postId).subscribe({
+      next: () => {
+        this.savedPosts = this.savedPosts.filter(p => p._id !== postId);
+        this.success = 'Post removido de guardados';
+        setTimeout(() => this.success = '', 3000);
+      },
+      error: (err: any) => {
+        console.error('Error unsaving post:', err);
+        this.error = err.error?.message || 'Error al remover de guardados';
+        setTimeout(() => this.error = '', 3000);
+      }
     });
   }
 }

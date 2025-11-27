@@ -10,13 +10,6 @@
         >
           Todos los Posts
         </button>
-        <button
-          class="btn"
-          [class.active]="viewFilter === 'mios'"
-          (click)="setViewFilter('mios')"
-        >
-          Mis Posts
-        </button>
       </div>
       <button *ngIf="canCreate()" class="btn btn-primary" (click)="showCreateForm = !showCreateForm">
         {{ showCreateForm ? 'Cancelar' : '+ Nuevo Post' }}
@@ -118,17 +111,19 @@
     <p>Cargando publicaciones...</p>
   </div>
 
-  <!-- Lista de posts -->
-  <div *ngIf="!loading && posts.length === 0" class="empty-state">
-    <p *ngIf="viewFilter === 'mios'">
-      No has publicado nada aún. ¡Crea tu primer post ahora!
-    </p>
-    <p *ngIf="viewFilter === 'todos'">
-      No hay publicaciones aún. ¡Sé el primero en publicar!
-    </p>
-  </div>
+  <!-- Sección de posts normales (todos y mios) -->
+  <div *ngIf="!showingSavedPosts">
+    <!-- Lista de posts -->
+    <div *ngIf="!loading && posts.length === 0" class="empty-state">
+      <p *ngIf="viewFilter === 'mios'">
+        No has publicado nada aún. ¡Crea tu primer post ahora!
+      </p>
+      <p *ngIf="viewFilter === 'todos'">
+        No hay publicaciones aún. ¡Sé el primero en publicar!
+      </p>
+    </div>
 
-  <div class="posts-list">
+    <div class="posts-list">
     <div *ngFor="let post of posts" class="post-card">
       <!-- Header del post -->
       <div class="post-header">
@@ -197,11 +192,12 @@
         </button>
         <button
           class="action-btn"
+          [class.saved]="isSaved(post)"
           (click)="toggleSave(post)"
         >
-          🔖 Guardar
+          {{ isSaved(post) ? '🔖 Guardado' : '🔖 Guardar' }}
         </button>
-        <button *ngIf="canEdit(post)" class="action-btn" (click)="startEditPost(post)">✏️ Editar</button>
+        <button *ngIf="viewFilter === 'mios' && canEdit(post)" class="action-btn" (click)="startEditPost(post)">✏️ Editar</button>
       </div>
 
       <!-- Sección de comentarios -->
@@ -259,6 +255,74 @@
 
         <div *ngIf="!hasComments(post._id)" class="no-comments">
           <p>No hay comentarios aún. ¡Sé el primero en comentar!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección de posts guardados -->
+  <div *ngIf="showingSavedPosts">
+    <h2>Posts Guardados ({{ savedPosts.length }})</h2>
+    <p style="color: red;">DEBUG: savedPosts.length = {{ savedPosts.length }}, showingSavedPosts = {{ showingSavedPosts }}</p>
+    <div *ngIf="savedPosts.length === 0" class="empty-state">
+      <p>No tienes posts guardados aún. ¡Guarda tus posts favoritos!</p>
+    </div>
+
+    <div class="posts-list">
+      <div *ngFor="let post of savedPosts" class="post-card">
+        <!-- Header del post -->
+        <div class="post-header">
+          <div class="post-author">
+            <div class="avatar" [ngClass]="{ 'with-image': post.author?.avatarUrl }">
+              <img
+                *ngIf="post.author?.avatarUrl"
+                [src]="post.author.avatarUrl"
+                [alt]="post.author?.nombre"
+                class="avatar-img"
+              />
+              <span *ngIf="!post.author?.avatarUrl" class="avatar-initial">
+                {{ post.author?.nombre?.charAt(0)?.toUpperCase() || 'U' }}
+              </span>
+            </div>
+            <div class="author-info">
+              <strong>{{ post.author?.nombre || 'Usuario' }}</strong>
+              <span class="post-date">{{ formatDate(post.createdAt) }}</span>
+            </div>
+          </div>
+          <div class="post-badge" *ngIf="post.author?.rol">
+            <span class="badge badge-{{ post.author.rol }}">{{ post.author.rol }}</span>
+          </div>
+        </div>
+
+        <!-- Contenido del post -->
+        <div class="post-content">
+          <h3 class="post-title">{{ post.title }}</h3>
+          <h4 class="post-subtitle" *ngIf="post.subtitle">{{ post.subtitle }}</h4>
+          <p class="post-summary" *ngIf="post.summary">{{ post.summary }}</p>
+          <div class="post-body">{{ post.content }}</div>
+
+          <!-- Archivo adjunto -->
+          <div *ngIf="post.fileUrl" class="post-file">
+            <a [href]="post.fileUrl" target="_blank" class="file-link">
+              📎 Ver archivo adjunto
+            </a>
+          </div>
+
+          <!-- Tags -->
+          <div *ngIf="post.tags && post.tags.length > 0" class="post-tags">
+            <span *ngFor="let tag of post.tags" class="tag">{{ tag }}</span>
+          </div>
+        </div>
+
+        <!-- Acciones del post -->
+        <div class="post-actions">
+          <button
+            class="action-btn"
+            [class.saved]="isSaved(post)"
+            (click)="toggleSave(post)"
+          >
+            {{ isSaved(post) ? '🔖 Guardado' : '🔖 Guardar' }}
+          </button>
         </div>
       </div>
     </div>

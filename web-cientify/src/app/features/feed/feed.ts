@@ -25,7 +25,8 @@ export class Feed implements OnInit, OnDestroy {
   editingPostId: string | null = null;
 
   // Filtro de vista
-  viewFilter: 'todos' | 'mios' = 'todos';
+  viewFilter: 'todos' | 'mios' | 'guardados' = 'todos';
+  showingSavedPosts: boolean = false;
 
   // Crear post
   showCreateForm = false;
@@ -44,6 +45,9 @@ export class Feed implements OnInit, OnDestroy {
   showCommentsMap: { [postId: string]: boolean } = {};
   newCommentMap: { [postId: string]: string } = {};
 
+  // Posts guardados
+  savedPosts: Post[] = [];
+
   constructor(
     private postService: PostService,
     private commentService: CommentService,
@@ -55,6 +59,7 @@ export class Feed implements OnInit, OnDestroy {
   ngOnInit() {
     this.loadUserProfile();
     this.subscribeToUserState();
+    this.loadSavedPosts();
     this.loadPosts();
   }
 
@@ -115,6 +120,7 @@ export class Feed implements OnInit, OnDestroy {
       next: (response) => {
         console.log('Publicaciones cargadas:', response.posts);
         this.allPosts = response.posts;
+        this.reconstructSavedPosts();
         this.applyFilter();
         this.loading = false;
       },
@@ -125,20 +131,39 @@ export class Feed implements OnInit, OnDestroy {
     });
   }
 
-  applyFilter() {
-    console.log('Aplicando filtro:', this.viewFilter);
-    if (this.viewFilter === 'mios') {
-      const userId = this.currentUser?._id || this.currentUser?.id;
-      console.log('Filtrando publicaciones del usuario:', userId);
-      this.posts = this.allPosts.filter(post => post.author._id === userId);
+  reconstructSavedPosts() {
+    const savedPostIds = localStorage.getItem('savedPostIds');
+    if (savedPostIds) {
+      try {
+        const postIds: string[] = JSON.parse(savedPostIds);
+        this.savedPosts = this.allPosts.filter(post => postIds.includes(post._id));
+        console.log('Posts guardados reconstruidos:', this.savedPosts.length);
+        console.log('Posts guardados:', this.savedPosts);
+      } catch (e) {
+        console.error('Error al reconstruir posts guardados:', e);
+        this.savedPosts = [];
+      }
     } else {
-      this.posts = this.allPosts;
+      this.savedPosts = [];
     }
-    console.log('Publicaciones después del filtro:', this.posts);
   }
 
-  setViewFilter(filter: 'todos' | 'mios') {
-    this.viewFilter = filter;
+  applyFilter() {
+    // Ahora el feed solo muestra todos los posts
+    // Los filtros "Mis Posts" y "Guardados" están en el perfil
+    this.posts = this.allPosts;
+  }
+
+  setViewFilter(filter: 'todos' | 'mios' | 'guardados') {
+    if (this.editingPostId) {
+      const confirmExit = confirm('¿Estás seguro de que quieres dejar de editar? Se perderán los cambios no guardados.');
+      if (!confirmExit) {
+        return;
+      }
+      this.cancelEditPost();
+    }
+    this.viewFilter = 'todos';
+    this.showingSavedPosts = false;
     this.applyFilter();
   }
 
@@ -338,14 +363,46 @@ export class Feed implements OnInit, OnDestroy {
   }
 
   toggleSave(post: Post) {
-    this.postService.toggleSave(post._id).subscribe({
-      next: (response) => {
-        console.log(response.message);
-      },
-      error: (err) => {
-        console.error('Error toggling save:', err);
+    const index = this.savedPosts.findIndex(savedPost => savedPost._id === post._id);
+    if (index === -1) {
+      this.savedPosts.push(post);
+      console.log('Post guardado:', post.title);
+    } else {
+      this.savedPosts.splice(index, 1);
+      console.log('Post eliminado de guardados:', post.title);
+    }
+    console.log('Posts guardados:', this.savedPosts);
+    this.saveSavedPostsToLocalStorage();
+    // Refrescar el filtro actual si estamos en "Mis Posts"
+    if (this.viewFilter === 'mios') {
+      this.applyFilter();
+    }
+    // Si estamos mostrando guardados, hacer una copia de la referencia para forzar detección de cambios
+    if (this.showingSavedPosts) {
+      this.savedPosts = [...this.savedPosts];
+    }
+  }
+
+  saveSavedPostsToLocalStorage() {
+    const postIds = this.savedPosts.map(p => p._id);
+    localStorage.setItem('savedPostIds', JSON.stringify(postIds));
+  }
+
+  loadSavedPosts() {
+    const savedPostIds = localStorage.getItem('savedPostIds');
+    if (savedPostIds) {
+      try {
+        const postIds: string[] = JSON.parse(savedPostIds);
+        // Los posts reales se cargarán desde allPosts cuando estén disponibles
+        console.log('IDs de posts guardados recuperados:', postIds);
+      } catch (e) {
+        console.error('Error al cargar posts guardados:', e);
       }
-    });
+    }
+  }
+
+  isSaved(post: Post): boolean {
+    return this.savedPosts.some(savedPost => savedPost._id === post._id);
   }
 
   hasLiked(post: Post): boolean {
