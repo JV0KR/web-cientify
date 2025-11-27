@@ -1,1 +1,140 @@
-<p>cientifico works!</p>
+<div class="cientifico-container">
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading">
+    <p>Cargando científicos...</p>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="alert alert-error">
+    {{ error }}
+  </div>
+
+  <!-- Success Message -->
+  <div *ngIf="success" class="alert alert-success">
+    {{ success }}
+  </div>
+
+  <!-- Header -->
+  <div class="search-header">
+    <h1>Directorio de Científicos</h1>
+    <p class="subtitle">Conecta con investigadores, científicos y profesores de nuestra comunidad</p>
+  </div>
+
+  <!-- Search and Filters -->
+  <div class="search-filters-container">
+    <!-- Search Bar -->
+    <div class="search-bar">
+      <input
+        type="text"
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="onSearchChange($event)"
+        placeholder="Buscar por nombre, email o especialidad..."
+        class="search-input"
+      />
+      <span class="search-icon"></span>
+    </div>
+
+    <!-- Filter Buttons -->
+    <div class="filters-section">
+      <div class="filter-group">
+        <label class="filter-label">Mostrar:</label>
+        <div class="filter-buttons">
+          <button
+            [class.active]="selectedFilter === 'todos'"
+            (click)="setFilter('todos')"
+            class="filter-btn"
+          >
+            Todos ({{ scientists.length }})
+          </button>
+          <button
+            [class.active]="selectedFilter === 'seguidos'"
+            (click)="setFilter('seguidos')"
+            class="filter-btn"
+          >
+            Siguiendo ({{ followingCount }})
+          </button>
+          <button
+            [class.active]="selectedFilter === 'no-seguidos'"
+            (click)="setFilter('no-seguidos')"
+            class="filter-btn"
+          >
+            No Seguidos
+          </button>
+        </div>
+      </div>
+
+      <!-- Sort Options -->
+      <div class="filter-group">
+        <label class="filter-label">Ordenar por:</label>
+        <select [(ngModel)]="sortBy" (ngModelChange)="setSortBy($event)" class="sort-select">
+          <option value="nombre">Nombre (A-Z)</option>
+          <option value="followers">Más Seguidores</option>
+          <option value="recent">Más Recientes</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div *ngIf="!loading" class="results-container">
+    <!-- Empty State -->
+    <div *ngIf="filteredScientists.length === 0" class="empty-state">
+      <p class="empty-icon"></p>
+      <p class="empty-message">
+        {{ searchQuery ? 'No se encontraron científicos con esos criterios' : 'No hay científicos disponibles' }}
+      </p>
+    </div>
+
+    <!-- Scientists Grid -->
+    <div *ngIf="filteredScientists.length > 0" class="scientists-grid">
+      <div *ngFor="let scientist of filteredScientists" class="scientist-card">
+        <!-- Card Header with Rol Badge -->
+        <div class="card-header">
+          <span class="rol-badge" [ngStyle]="{ backgroundColor: getRolColor(scientist.rol) }">
+            {{ scientist.rol | uppercase }}
+          </span>
+          <span class="followers-badge">
+            👥 {{ scientist.followersCount || 0 }} seguidores
+          </span>
+        </div>
+
+        <!-- Avatar -->
+        <div class="avatar-container">
+          <div class="avatar" [ngStyle]="{ backgroundColor: getRolColor(scientist.rol) }">
+            <img *ngIf="scientist.avatarUrl" [src]="scientist.avatarUrl" [alt]="scientist.nombre" />
+            <span *ngIf="!scientist.avatarUrl">{{ scientist.nombre.charAt(0).toUpperCase() }}</span>
+          </div>
+        </div>
+
+        <!-- Info -->
+        <div class="card-info">
+          <h3>{{ scientist.nombre }}</h3>
+          <p class="email">{{ scientist.email }}</p>
+          <p *ngIf="scientist.bio" class="bio">{{ scientist.bio }}</p>
+          <p class="joined-date">Miembro desde {{ formatDate(scientist.createdAt) }}</p>
+        </div>
+
+        <!-- Actions -->
+        <div class="card-actions">
+          <button
+            (click)="viewProfile(scientist)"
+            class="btn btn-secondary btn-sm"
+            title="Ver perfil"
+          >
+            Ver Perfil
+          </button>
+          <button
+            (click)="toggleFollow(scientist)"
+            [class.following]="scientist.isFollowing"
+            [class.btn-primary]="!scientist.isFollowing"
+            [class.btn-danger]="scientist.isFollowing"
+            class="btn btn-sm"
+            [title]="scientist.isFollowing ? 'Dejar de seguir' : 'Seguir'"
+          >
+            {{ scientist.isFollowing ? '✓ Siguiendo' : '+ Seguir' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

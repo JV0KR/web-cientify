@@ -91,35 +91,130 @@
         </div>
         <div *ngIf="!postsLoading && userPosts.length > 0" class="posts-grid">
           <div *ngFor="let post of userPosts" class="post-card">
-            <div class="post-card-header">
-              <h3>{{ post.title }}</h3>
-              <span class="post-status" [class.published]="post.published">
-                {{ post.published ? '✓ Publicado' : '🔒 Borrador' }}
-              </span>
-            </div>
-            <p class="post-summary">{{ post.subtitle || post.summary }}</p>
-            <div class="post-meta">
-              <small class="post-date">{{ formatDate(post.createdAt) }}</small>
-              <div class="post-stats">
-                <span>❤️ {{ post.likes?.length || 0 }}</span>
-                <span>💾 {{ post.guardados?.length || 0 }}</span>
+            <!-- Post Editing Form -->
+            <div *ngIf="editingPostId === post._id" class="post-edit-form">
+              <div class="edit-form-header">
+                <h4>Editar Post</h4>
+                <button class="close-btn" (click)="cancelEditPost()">✕</button>
               </div>
+              <form (ngSubmit)="saveEditPost()" class="post-form">
+                <div class="form-group">
+                  <label>Título *</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="postEditForm.title"
+                    name="title"
+                    required
+                    placeholder="Título del post"
+                    class="form-control"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Subtítulo</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="postEditForm.subtitle"
+                    name="subtitle"
+                    placeholder="Subtítulo (opcional)"
+                    class="form-control"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Resumen</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="postEditForm.summary"
+                    name="summary"
+                    placeholder="Resumen breve del post"
+                    class="form-control"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Contenido *</label>
+                  <textarea
+                    [(ngModel)]="postEditForm.content"
+                    name="content"
+                    required
+                    rows="6"
+                    placeholder="Contenido del post"
+                    class="form-control"
+                  ></textarea>
+                </div>
+                <div class="form-group">
+                  <label>Etiquetas (separadas por comas)</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="postEditForm.tags"
+                    name="tags"
+                    placeholder="python, ciencia, investigación"
+                    class="form-control"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Imagen (opcional)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    (change)="onPostFileSelected($event)"
+                    class="form-control"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>
+                    <input type="checkbox" [(ngModel)]="postEditForm.published" name="published" />
+                     Publicar inmediatamente
+                  </label>
+                </div>
+                <div class="form-actions">
+                  <button type="submit" [disabled]="loading" class="btn btn-primary btn-sm">
+                    {{ loading ? 'Guardando...' : 'Guardar Cambios' }}
+                  </button>
+                  <button type="button" (click)="cancelEditPost()" [disabled]="loading" class="btn btn-secondary btn-sm">
+                    Cancelar
+                  </button>
+                </div>
+              </form>
             </div>
-            <div class="post-actions">
-              <button
-                class="btn btn-sm btn-secondary"
-                (click)="togglePublishPost(post)"
-                [title]="post.published ? 'Ocultar post' : 'Publicar post'"
-              >
-                {{ post.published ? '🔓' : '🔒' }} {{ post.published ? 'Ocultar' : 'Publicar' }}
-              </button>
-              <button
-                class="btn btn-sm btn-danger"
-                (click)="deletePost(post._id, post.title)"
-                title="Eliminar post"
-              >
-                 Eliminar
-              </button>
+
+            <!-- Post Display -->
+            <div *ngIf="editingPostId !== post._id" class="post-content">
+              <div class="post-card-header">
+                <h3>{{ post.title }}</h3>
+                <span class="post-status" [class.published]="post.published">
+                  {{ post.published ? '✓ Publicado' : '🔒 Borrador' }}
+                </span>
+              </div>
+              <p class="post-summary">{{ post.subtitle || post.summary }}</p>
+              <div class="post-meta">
+                <small class="post-date">{{ formatDate(post.createdAt) }}</small>
+                <div class="post-stats">
+                  <span>❤️ {{ post.likes?.length || 0 }}</span>
+                  <span>💾 {{ post.guardados?.length || 0 }}</span>
+                </div>
+              </div>
+              <div class="post-actions">
+                <button
+                  class="btn btn-sm btn-secondary"
+                  (click)="startEditPost(post)"
+                  title="Editar post"
+                >
+                   Editar
+                </button>
+                <button
+                  class="btn btn-sm btn-secondary"
+                  (click)="togglePublishPost(post)"
+                  [title]="post.published ? 'Ocultar post' : 'Publicar post'"
+                >
+                  {{ post.published ? '🔓' : '🔒' }} {{ post.published ? 'Ocultar' : 'Publicar' }}
+                </button>
+                <button
+                  class="btn btn-sm btn-danger"
+                  (click)="deletePost(post._id, post.title)"
+                  title="Eliminar post"
+                >
+                   Eliminar
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -160,25 +255,103 @@
       <!-- Settings Tab -->
       <div class="profile-tabs-content" *ngIf="activeTab === 'settings'">
         <h2>Configuración de Cuenta</h2>
-        <form class="settings-form" (ngSubmit)="saveSettings()">
-          <div class="settings-group">
-            <label>
-              <input type="checkbox" [(ngModel)]="settings.darkMode" name="darkMode" />
-               Modo oscuro
-            </label>
+
+        <!-- Theme Settings -->
+        <div class="settings-section">
+          <h3>Apariencia</h3>
+          <form class="settings-form" (ngSubmit)="saveSettings()">
+            <div class="settings-group">
+              <label>
+                <input type="checkbox" [(ngModel)]="settings.darkMode" name="darkMode" />
+                 Modo oscuro
+              </label>
+              <small class="settings-hint">Activa el modo oscuro para una mejor experiencia visual en espacios con poca luz</small>
+            </div>
+            <div class="settings-actions">
+              <button type="submit" class="btn btn-primary">Guardar configuración</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Delete Account Section -->
+        <div class="settings-section danger-zone">
+
+          <!-- Initial State -->
+          <div *ngIf="deleteAccountStep === 0" class="delete-account-initial">
+            <p class="delete-warning">La eliminación de tu cuenta es permanente e irreversible. Se eliminarán todos tus datos, posts y comentarios.</p>
+            <button
+              type="button"
+              class="btn btn-danger"
+              (click)="initiateDeleteAccount()"
+              title="Iniciar proceso de eliminación de cuenta"
+            >
+               Eliminar mi Cuenta
+            </button>
           </div>
-          <div class="settings-group">
-            <label>
-              <input type="checkbox" [(ngModel)]="settings.privateProfile" name="privateProfile" />
-              Perfil privado
-            </label>
+
+          <!-- Confirmation Step 1 - Text Entry -->
+          <div *ngIf="deleteAccountStep === 1" class="delete-account-confirmation">
+            <p class="confirm-message">Para confirmar que deseas eliminar tu cuenta, escribe exactamente:</p>
+            <code class="confirmation-text">eliminar mi cuenta</code>
+            <div class="form-group">
+              <input
+                type="text"
+                [(ngModel)]="deleteAccountConfirmation"
+                name="deleteConfirmation"
+                placeholder="Escribe el texto de confirmación aquí"
+                class="form-control confirmation-input"
+              />
+            </div>
+            <div class="confirmation-actions">
+              <button
+                type="button"
+                class="btn btn-danger"
+                (click)="checkDeleteConfirmation()"
+                [disabled]="deleteAccountConfirmation.toLowerCase() !== 'eliminar mi cuenta'"
+              >
+                Continuar con la Eliminación
+              </button>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                (click)="cancelDeleteAccount()"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
-          <div class="settings-actions">
-            <button type="submit" class="btn btn-primary">Guardar configuración</button>
+
+          <!-- Confirmation Step 2 - Final Warning -->
+          <div *ngIf="deleteAccountStep === 2" class="delete-account-final">
+            <div class="final-warning">
+              <p class="warning-title">ÚLTIMA ADVERTENCIA</p>
+              <p>Esta es tu última oportunidad para cambiar de opinión. Al hacer clic en "Eliminar permanentemente", tu cuenta será eliminada de forma irreversible.</p>
+              <ul class="deletion-consequences">
+                <li>✗ Se eliminarán todos tus posts y comentarios</li>
+                <li>✗ Se perderán todos tus seguidores y relaciones</li>
+                <li>✗ Se borrarán tus datos de perfil</li>
+                <li>✗ Esta acción NO se puede deshacer</li>
+              </ul>
+            </div>
+            <div class="confirmation-actions">
+              <button
+                type="button"
+                class="btn btn-danger"
+                (click)="deleteAccount()"
+                [disabled]="loading"
+              >
+                {{ loading ? 'Eliminando cuenta...' : 'Eliminar Permanentemente' }}
+              </button>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                (click)="cancelDeleteAccount()"
+                [disabled]="loading"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
-        </form>
-        <div class="settings-status" *ngIf="settingsSaved">
-          <span class="alert alert-success">✓ Configuración guardada correctamente</span>
         </div>
       </div>
     </div>

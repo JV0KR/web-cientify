@@ -48,5 +48,9 @@ export class UserService {
   getUserById(userId: string): Observable<any> {
     return this.http.get<any>(`${this.api}/${userId}`);
   }
+
+  deleteAccount(): Observable<any> {
+    return this.http.delete<any>(`${this.api}/profile`);
+  }
 }
 

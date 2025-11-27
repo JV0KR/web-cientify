@@ -45,10 +45,24 @@ export class Perfil implements OnInit, OnDestroy {
 
   // Configuración
   settings = {
-    darkMode: false,
-    privateProfile: false
+    darkMode: false
   };
   settingsSaved = false;
+  deleteAccountConfirmation = '';
+  deleteAccountStep = 0; // 0: initial, 1: confirmation text entered, 2: ready to delete
+
+  // Post editing
+  editingPostId: string | null = null;
+  editingPost: any = null;
+  postEditForm = {
+    title: '',
+    subtitle: '',
+    summary: '',
+    content: '',
+    tags: '',
+    published: true
+  };
+  postEditFile: File | null = null;
 
   // Formulario de edición
   editForm = {
@@ -87,7 +101,11 @@ export class Perfil implements OnInit, OnDestroy {
     localStorage.setItem('perfilSettings', JSON.stringify(this.settings));
     this.settingsSaved = true;
     this.applyTheme();
-    setTimeout(() => this.settingsSaved = false, 2000);
+    this.success = 'Configuración guardada correctamente';
+    setTimeout(() => {
+      this.settingsSaved = false;
+      this.success = '';
+    }, 3000);
   }
 
   applyTheme() {
@@ -96,6 +114,61 @@ export class Perfil implements OnInit, OnDestroy {
     } else {
       document.body.classList.remove('dark-mode');
     }
+  }
+
+  initiateDeleteAccount() {
+    this.deleteAccountStep = 1;
+    this.deleteAccountConfirmation = '';
+  }
+
+  cancelDeleteAccount() {
+    this.deleteAccountStep = 0;
+    this.deleteAccountConfirmation = '';
+  }
+
+  checkDeleteConfirmation() {
+    if (this.deleteAccountConfirmation.toLowerCase() === 'eliminar mi cuenta') {
+      this.deleteAccountStep = 2;
+    } else {
+      this.error = 'El texto no coincide. Por favor, escribe "eliminar mi cuenta" exactamente.';
+      setTimeout(() => this.error = '', 3000);
+    }
+  }
+
+  deleteAccount() {
+    if (this.deleteAccountStep !== 2) {
+      this.error = 'Por favor, confirma tu intención de eliminar la cuenta';
+      return;
+    }
+
+    const confirmation = confirm(
+      '⚠️ ADVERTENCIA: Esta acción eliminará permanentemente tu cuenta, todos tus posts, comentarios y datos asociados. Esta acción NO se puede deshacer.\\n\\n¿Estás completamente seguro de que deseas continuar?'
+    );
+
+    if (!confirmation) {
+      this.deleteAccountStep = 1;
+      this.deleteAccountConfirmation = '';
+      return;
+    }
+
+    this.loading = true;
+    this.userService.deleteAccount().subscribe({
+      next: () => {
+        this.success = 'Cuenta eliminada correctamente. Redirigiendo...';
+        setTimeout(() => {
+          this.auth.logout();
+          this.router.navigate(['/']);
+        }, 2000);
+      },
+      error: (err: any) => {
+        this.loading = false;
+        this.deleteAccountStep = 0;
+        this.deleteAccountConfirmation = '';
+        console.error('Error deleting account:', err);
+        this.error = err.error?.message || 'Error al eliminar la cuenta. Por favor, intenta más tarde';
+        setTimeout(() => this.error = '', 3000);
+      }
+    });
   }
 
   constructor(
@@ -217,7 +290,7 @@ export class Perfil implements OnInit, OnDestroy {
           // Validar que la respuesta sea válida
           if (data && typeof data === 'object') {
             this.user = data;
-            // 🔄 Actualizar estado global para que se vea en Navbar y otros componentes
+            //  Actualizar estado global para que se vea en Navbar y otros componentes
             this.userStateService.setUser(data);
             this.loadEditForm();
             this.isEditing = false;
@@ -249,7 +322,7 @@ export class Perfil implements OnInit, OnDestroy {
           // Validar que la respuesta sea válida
           if (data && typeof data === 'object') {
             this.user = data;
-            // 🔄 Actualizar estado global para que se vea en Navbar y otros componentes
+            //  Actualizar estado global para que se vea en Navbar y otros componentes
             this.userStateService.setUser(data);
             this.loadEditForm();
             this.isEditing = false;
@@ -448,6 +521,84 @@ export class Perfil implements OnInit, OnDestroy {
       error: (err: any) => {
         console.error('Error unsaving post:', err);
         this.error = err.error?.message || 'Error al remover de guardados';
+        setTimeout(() => this.error = '', 3000);
+      }
+    });
+  }
+
+  startEditPost(post: any) {
+    this.editingPostId = post._id;
+    this.editingPost = post;
+    this.postEditForm = {
+      title: post.title || '',
+      subtitle: post.subtitle || '',
+      summary: post.summary || '',
+      content: post.content || '',
+      tags: post.tags ? post.tags.join(', ') : '',
+      published: post.published !== undefined ? post.published : true
+    };
+    this.postEditFile = null;
+  }
+
+  cancelEditPost() {
+    this.editingPostId = null;
+    this.editingPost = null;
+    this.postEditFile = null;
+    this.postEditForm = {
+      title: '',
+      subtitle: '',
+      summary: '',
+      content: '',
+      tags: '',
+      published: true
+    };
+  }
+
+  onPostFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      this.postEditFile = file;
+    }
+  }
+
+  saveEditPost() {
+    if (!this.postEditForm.title || !this.postEditForm.content) {
+      this.error = 'Título y contenido son obligatorios';
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('title', this.postEditForm.title);
+    formData.append('subtitle', this.postEditForm.subtitle);
+    formData.append('summary', this.postEditForm.summary);
+    formData.append('content', this.postEditForm.content);
+    formData.append('published', this.postEditForm.published.toString());
+
+    if (this.postEditForm.tags) {
+      const tags = this.postEditForm.tags.split(',').map(t => t.trim()).filter(t => t);
+      tags.forEach(tag => formData.append('tags', tag));
+    }
+
+    if (this.postEditFile) {
+      formData.append('file', this.postEditFile);
+    }
+
+    this.loading = true;
+    this.postService.update(this.editingPostId!, formData).subscribe({
+      next: (updated: any) => {
+        const idx = this.userPosts.findIndex(p => p._id === updated._id);
+        if (idx !== -1) {
+          this.userPosts[idx] = updated;
+        }
+        this.success = 'Post actualizado correctamente';
+        this.cancelEditPost();
+        this.loading = false;
+        setTimeout(() => this.success = '', 3000);
+      },
+      error: (err: any) => {
+        console.error('Error updating post:', err);
+        this.error = err.error?.message || 'Error al actualizar el post';
+        this.loading = false;
         setTimeout(() => this.error = '', 3000);
       }
     });
