@@ -51,13 +51,13 @@
       <!-- Action Buttons -->
       <div class="profile-actions">
         <button class="btn btn-secondary" (click)="toggleEdit()" title="Editar perfil">
-          ✏️ Editar Perfil
+           Editar Perfil
         </button>
         <button class="btn btn-secondary" (click)="setActiveTab('settings')" title="Configuración">
-          ⚙️ Configuración
+          Configuración
         </button>
         <button class="btn btn-danger" (click)="logout()" title="Cerrar sesión">
-          🚪 Cerrar Sesión
+         Cerrar Sesión
         </button>
       </div>
     </div>
@@ -70,14 +70,14 @@
           (click)="setActiveTab('posts')"
           class="tab-button"
         >
-          📝 Mis Posts
+          Mis Posts
         </button>
         <button
           [class.active]="activeTab === 'saved'"
           (click)="setActiveTab('saved')"
           class="tab-button"
         >
-          💾 Guardados ({{ savedPosts.length }})
+          Guardados ({{ savedPosts.length }})
         </button>
       </div>
 
@@ -118,7 +118,7 @@
                 (click)="deletePost(post._id, post.title)"
                 title="Eliminar post"
               >
-                🗑️ Eliminar
+                 Eliminar
               </button>
             </div>
           </div>
@@ -150,7 +150,7 @@
                 (click)="unsavePost(post._id)"
                 title="Remover de guardados"
               >
-                🗑️ Remover
+                Remover
               </button>
             </div>
           </div>
@@ -164,13 +164,13 @@
           <div class="settings-group">
             <label>
               <input type="checkbox" [(ngModel)]="settings.darkMode" name="darkMode" />
-              🌙 Modo oscuro
+               Modo oscuro
             </label>
           </div>
           <div class="settings-group">
             <label>
               <input type="checkbox" [(ngModel)]="settings.privateProfile" name="privateProfile" />
-              🔒 Perfil privado
+              Perfil privado
             </label>
           </div>
           <div class="settings-actions">
@@ -220,7 +220,7 @@
               id="avatar-input"
             />
             <label for="avatar-input" class="upload-label">
-              📸 Cambiar foto de perfil
+              Cambiar foto de perfil
             </label>
             <p class="upload-hint">JPG, PNG. Máximo 5MB</p>
           </div>
@@ -300,7 +300,7 @@
           [disabled]="!editForm.nombre || !editForm.email || editForm.nombre.length < 3 || loading"
           class="btn btn-primary btn-large"
         >
-          {{ loading ? 'Guardando...' : '💾 Guardar Cambios' }}
+          {{ loading ? 'Guardando...' : 'Guardar Cambios' }}
         </button>
         <button
           type="button"

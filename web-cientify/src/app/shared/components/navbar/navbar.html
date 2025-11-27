@@ -3,7 +3,7 @@
     <!-- Logo/Brand -->
     <div class="navbar-brand">
       <a routerLink="/feed" class="logo">
-        🔬 Cientify
+        Cientify
       </a>
     </div>
 
@@ -12,23 +12,23 @@
       <!-- Authenticated Routes -->
       <div *ngIf="isAuthenticated" class="nav-links">
         <a routerLink="/feed" (click)="closeMenu()" class="nav-link">
-          📰 Feed
+          Feed
         </a>
         <a routerLink="/perfil" (click)="closeMenu()" class="nav-link">
-          👤 Perfil
+          Perfil
         </a>
         <a routerLink="/cientifico" (click)="closeMenu()" class="nav-link">
-          👨‍🔬 Científicos
+          Científicos
         </a>
       </div>
 
       <!-- Guest Routes -->
       <div *ngIf="!isAuthenticated" class="nav-links">
         <a routerLink="/login" (click)="closeMenu()" class="nav-link">
-          🔐 Inicia Sesión
+          Inicia Sesión
         </a>
         <a routerLink="/register" (click)="closeMenu()" class="nav-link">
-          📝 Regístrate
+          Regístrate
         </a>
       </div>
     </div>
@@ -60,16 +60,16 @@
         <div class="dropdown-divider"></div>
 
         <a routerLink="/perfil" (click)="closeMenu()" class="dropdown-item">
-          ✏️ Editar Perfil
+          Editar Perfil
         </a>
         <a routerLink="/feed" (click)="closeMenu()" class="dropdown-item">
-          📰 Mi Feed
+          Mi Feed
         </a>
 
         <div class="dropdown-divider"></div>
 
         <button (click)="logout()" class="dropdown-item logout-btn">
-          🚪 Cerrar Sesión
+          Cerrar Sesión
         </button>
       </div>
     </div>
