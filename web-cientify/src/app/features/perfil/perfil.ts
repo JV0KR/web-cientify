@@ -5,7 +5,7 @@ import { UserService } from '../../core/services/user';
 import { UserStateService } from '../../core/services/user-state';
 import { Auth } from '../../auth/services/auth';
 import { PostService, Post } from '../../core/services/post';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -28,7 +28,7 @@ interface UserProfile {
   templateUrl: './perfil.html',
   styleUrl: './perfil.css',
 })
-export class Perfil implements OnInit, OnDestroy {
+export class PerfilComponent implements OnInit, OnDestroy {
   user: UserProfile | null = null;
   isEditing = false;
   loading = false;
@@ -76,10 +76,26 @@ export class Perfil implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   ngOnInit() {
-    this.loadProfile();
     this.loadSettings();
-    this.loadUserPosts();
-    this.loadSavedPosts();
+    
+    // Suscribirse a cambios de param para recargar si cambia la ruta
+    this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      const id = params.get('id');
+      console.log('🔍 [Perfil] Param id desde ruta:', id);
+
+      if (id && id.trim() !== '') {
+        // Hay id en la ruta → cargar perfil del usuario externo
+        console.log('📌 Cargando perfil externo para id:', id);
+        this.loadProfileById(id);
+      } else {
+        // Sin id en ruta → cargar perfil propio
+        console.log('📌 Sin id en ruta, cargando MI PERFIL');
+        this.loadProfile();
+      }
+
+      this.loadUserPosts();
+      this.loadSavedPosts();
+    });
   }
 
   ngOnDestroy() {
@@ -176,7 +192,8 @@ export class Perfil implements OnInit, OnDestroy {
     private userStateService: UserStateService,
     private auth: Auth,
     private postService: PostService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   // Removed duplicate ngOnInit and ngOnDestroy
@@ -201,6 +218,38 @@ export class Perfil implements OnInit, OnDestroy {
         console.error('Error loading profile:', err);
         this.error = err.error?.message || 'No se pudo cargar el perfil';
         this.loading = false;
+      }
+    });
+  }
+
+  loadProfileById(id: string) {
+    this.loading = true;
+    console.log('🌐 Llamando a getUserById con id:', id);
+    
+    this.userService.getUserById(id).subscribe({
+      next: (data: any) => {
+        console.log('✅ Perfil del científico cargado:', data);
+        if (data && typeof data === 'object') {
+          this.user = data;
+          this.loadEditForm();
+        } else {
+          console.error('Respuesta del servidor inválida:', data);
+          this.error = 'Datos del perfil inválidos';
+        }
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('❌ Error cargando científico:', err?.status, err?.message);
+        this.loading = false;
+        if (err?.status === 404) {
+          this.error = 'Científico no encontrado';
+          setTimeout(() => this.router.navigate(['/cientifico']), 2000);
+        } else if (err?.status === 401) {
+          this.error = 'No autorizado. Inicia sesión.';
+          setTimeout(() => this.router.navigate(['/login']), 2000);
+        } else {
+          this.error = 'Error al cargar el perfil';
+        }
       }
     });
   }
