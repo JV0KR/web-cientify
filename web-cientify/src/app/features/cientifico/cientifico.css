@@ -97,24 +97,15 @@
   color: #95a5a6;
 }
 
-.theme-toggle {
-  border: none;
-  border-radius: 16px;
-  background: linear-gradient(120deg, #22223b 0%, #4f8cff 100%);
-  color: white;
-  font-weight: 600;
+.insights-theme-toggle {
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 14px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  padding: 0 16px;
 }
 
-.theme-toggle:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 24px rgba(79, 140, 255, 0.35);
+.insights-theme-toggle app-theme-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 /* Search & Filters */
@@ -526,10 +517,6 @@
 .dark-mode .insight-card .label,
 .dark-mode .subtitle {
   color: #c0c0c0;
-}
-
-.dark-mode .theme-toggle {
-  background: linear-gradient(120deg, #0f172a 0%, #1d4ed8 100%);
 }
 
 .dark-mode .card-header {

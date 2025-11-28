@@ -1,10 +1,8 @@
-<div class="feed-container" [class.dark-mode]="isDarkMode">
+<div class="feed-container">
   <div class="feed-header">
     <h1>Feed Científico</h1>
     <div class="header-actions">
-      <button type="button" class="btn theme-toggle" (click)="toggleTheme()">
-        {{ isDarkMode ? '☀️ Modo claro' : '🌙 Modo oscuro' }}
-      </button>
+      <app-theme-toggle></app-theme-toggle>
       <div class="filter-buttons">
         <button
           class="btn"

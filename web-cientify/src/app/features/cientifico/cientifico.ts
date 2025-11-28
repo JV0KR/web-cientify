@@ -6,6 +6,7 @@ import { Auth } from '../../auth/services/auth';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle';
 
 interface Scientist {
   _id: string;
@@ -23,7 +24,7 @@ interface Scientist {
 @Component({
   selector: 'app-cientifico',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ThemeToggleComponent],
   templateUrl: './cientifico.html',
   styleUrl: './cientifico.css',
 })
@@ -38,11 +39,9 @@ export class Cientifico implements OnInit, OnDestroy {
   sortBy: 'nombre' | 'followers' | 'recent' = 'nombre';
   followingCount = 0;
   totalScientists = 0;
-  isDarkMode = false;
 
   private destroy$ = new Subject<void>();
   private searchSubject = new Subject<string>();
-  private readonly themeStorageKey = 'cientify-theme';
 
   constructor(
     private userService: UserService,
@@ -51,7 +50,6 @@ export class Cientifico implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.initializeTheme();
     this.loadScientists();
 
     this.searchSubject
@@ -220,20 +218,4 @@ export class Cientifico implements OnInit, OnDestroy {
     this.router.navigate(['/perfil', scientist._id]);
   }
 
-  toggleTheme() {
-    this.isDarkMode = !this.isDarkMode;
-    localStorage.setItem(this.themeStorageKey, this.isDarkMode ? 'dark' : 'light');
-    this.applyThemeClass();
-  }
-
-  private initializeTheme() {
-    this.isDarkMode = localStorage.getItem(this.themeStorageKey) === 'dark';
-    this.applyThemeClass();
-  }
-
-  private applyThemeClass() {
-    if (typeof document !== 'undefined') {
-      document.body.classList.toggle('dark-mode', this.isDarkMode);
-    }
-  }
 }

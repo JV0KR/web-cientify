@@ -9,21 +9,12 @@
   gap: 16px;
 }
 
-.theme-toggle {
-  border: none;
-  border-radius: 999px;
-  padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-  align-self: flex-end;
-}
-
-.theme-toggle:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+.login-toggle-container {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
 }
 
 .login-card {
@@ -129,54 +120,49 @@
   text-decoration: underline;
 }
 
-.login-container.dark-mode {
+.dark-mode .login-container {
   background: radial-gradient(circle at top, #0f172a 0%, #020617 80%);
 }
 
-.login-container.dark-mode .theme-toggle {
-  background: rgba(15, 23, 42, 0.8);
-  color: #f8fafc;
-}
-
-.login-container.dark-mode .login-card {
+.dark-mode .login-card {
   background: #0f172a;
   color: #e2e8f0;
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6);
 }
 
-.login-container.dark-mode .login-card h2 {
+.dark-mode .login-card h2 {
   color: #f8fafc;
 }
 
-.login-container.dark-mode .form-group label {
+.dark-mode .form-group label {
   color: #cbd5f5;
 }
 
-.login-container.dark-mode .form-control {
+.dark-mode .form-control {
   background: #020617;
   border-color: #1e293b;
   color: #f8fafc;
 }
 
-.login-container.dark-mode .form-control:focus {
+.dark-mode .form-control:focus {
   border-color: #38bdf8;
 }
 
-.login-container.dark-mode .error-message {
+.dark-mode .error-message {
   background: rgba(239, 68, 68, 0.15);
   border-color: rgba(248, 113, 113, 0.4);
   color: #fecaca;
 }
 
-.login-container.dark-mode .btn-primary {
+.dark-mode .btn-primary {
   background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
 }
 
-.login-container.dark-mode .register-link p {
+.dark-mode .register-link p {
   color: #cbd5f5;
 }
 
-.login-container.dark-mode .register-link a {
+.dark-mode .register-link a {
   color: #38bdf8;
 }
 

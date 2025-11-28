@@ -37,9 +37,9 @@
     <strong>{{ selectedFilter | uppercase }}</strong>
     <small>Modo de visualización</small>
   </div>
-  <button class="theme-toggle" type="button" (click)="toggleTheme()">
-    <span>{{ isDarkMode ? '☀️ Modo claro' : '🌙 Modo oscuro' }}</span>
-  </button>
+  <div class="insights-theme-toggle">
+    <app-theme-toggle></app-theme-toggle>
+  </div>
 </div>
 
 <!-- Search and Filters -->
