@@ -1,4 +1,7 @@
-<div class="login-container">
+<div class="login-container" [class.dark-mode]="isDarkMode">
+  <button type="button" class="theme-toggle" (click)="toggleTheme()">
+    {{ isDarkMode ? '☀️ Modo claro' : '🌙 Modo oscuro' }}
+  </button>
   <div class="login-card">
     <h2>Iniciar Sesión</h2>
     <form (ngSubmit)="submit()" #loginForm="ngForm">

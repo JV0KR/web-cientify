@@ -20,8 +20,30 @@
     <p class="subtitle">Conecta con investigadores, científicos y profesores de nuestra comunidad</p>
   </div>
 
-  <!-- Search and Filters -->
-  <div class="search-filters-container">
+<!-- Insights & Controls -->
+<div class="insights-toolbar">
+  <div class="insight-card">
+    <span class="label">Científicos disponibles</span>
+    <strong>{{ totalScientists }}</strong>
+    <small>Registrados en la comunidad</small>
+  </div>
+  <div class="insight-card">
+    <span class="label">Ya sigues</span>
+    <strong>{{ followingCount }}</strong>
+    <small>Conexiones activas</small>
+  </div>
+  <div class="insight-card">
+    <span class="label">Filtro activo</span>
+    <strong>{{ selectedFilter | uppercase }}</strong>
+    <small>Modo de visualización</small>
+  </div>
+  <button class="theme-toggle" type="button" (click)="toggleTheme()">
+    <span>{{ isDarkMode ? '☀️ Modo claro' : '🌙 Modo oscuro' }}</span>
+  </button>
+</div>
+
+<!-- Search and Filters -->
+<div class="search-filters-container">
     <!-- Search Bar -->
     <div class="search-bar">
       <input

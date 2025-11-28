@@ -37,9 +37,12 @@ export class Cientifico implements OnInit, OnDestroy {
   selectedFilter: 'todos' | 'seguidos' | 'no-seguidos' = 'todos';
   sortBy: 'nombre' | 'followers' | 'recent' = 'nombre';
   followingCount = 0;
+  totalScientists = 0;
+  isDarkMode = false;
 
   private destroy$ = new Subject<void>();
   private searchSubject = new Subject<string>();
+  private readonly themeStorageKey = 'cientify-theme';
 
   constructor(
     private userService: UserService,
@@ -48,6 +51,7 @@ export class Cientifico implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
+    this.initializeTheme();
     this.loadScientists();
 
     this.searchSubject
@@ -68,16 +72,19 @@ export class Cientifico implements OnInit, OnDestroy {
 
   loadScientists() {
     this.loading = true;
-    this.userService.listUsers().subscribe({
+    this.userService.searchScientists({ rol: 'cientifico', limit: 100 }).subscribe({
       next: (response: any) => {
-        const allUsers = response.usuarios || [];
-        // Filtrar solo los científicos (rol cientifico, investigador o profesor)
-        this.scientists = allUsers
+        const usuarios = response.usuarios || [];
+        this.totalScientists = response.total ?? usuarios.length;
+        this.scientists = usuarios
           .filter((u: any) => ['cientifico', 'investigador', 'profesor'].includes(u.rol))
           .map((u: any) => ({
             ...u,
-            isFollowing: false
+            followersCount: u.followersCount ?? (u.seguidores?.length || 0),
+            followingCount: u.followingCount ?? (u.siguiendo?.length || 0),
+            isFollowing: !!u.isFollowing,
           }));
+        this.refreshFollowingCount();
         this.filterAndSortScientists();
         this.loading = false;
       },
@@ -129,6 +136,10 @@ export class Cientifico implements OnInit, OnDestroy {
     }
 
     this.filteredScientists = filtered;
+    this.refreshFollowingCount();
+  }
+
+  private refreshFollowingCount() {
     this.followingCount = this.scientists.filter(s => s.isFollowing).length;
   }
 
@@ -173,11 +184,11 @@ export class Cientifico implements OnInit, OnDestroy {
 
   follow(scientist: Scientist) {
     this.userService.follow(scientist._id).subscribe({
-      next: () => {
+      next: (response) => {
         scientist.isFollowing = true;
-        scientist.followersCount = (scientist.followersCount || 0) + 1;
-        this.followingCount++;
-        this.success = `Siguiendo a ${scientist.nombre}`;
+        scientist.followersCount = response?.target?.followersCount ?? (scientist.followersCount || 0) + 1;
+        this.refreshFollowingCount();
+        this.success = `Siguiendo a ${response?.target?.nombre || scientist.nombre}`;
         setTimeout(() => this.success = '', 2000);
       },
       error: (err: any) => {
@@ -190,11 +201,11 @@ export class Cientifico implements OnInit, OnDestroy {
 
   unfollow(scientist: Scientist) {
     this.userService.unfollow(scientist._id).subscribe({
-      next: () => {
+      next: (response) => {
         scientist.isFollowing = false;
-        scientist.followersCount = Math.max(0, (scientist.followersCount || 1) - 1);
-        this.followingCount--;
-        this.success = `Dejaste de seguir a ${scientist.nombre}`;
+        scientist.followersCount = response?.target?.followersCount ?? Math.max(0, (scientist.followersCount || 1) - 1);
+        this.refreshFollowingCount();
+        this.success = `Dejaste de seguir a ${response?.target?.nombre || scientist.nombre}`;
         setTimeout(() => this.success = '', 2000);
       },
       error: (err: any) => {
@@ -207,5 +218,22 @@ export class Cientifico implements OnInit, OnDestroy {
 
   viewProfile(scientist: Scientist) {
     this.router.navigate(['/perfil', scientist._id]);
+  }
+
+  toggleTheme() {
+    this.isDarkMode = !this.isDarkMode;
+    localStorage.setItem(this.themeStorageKey, this.isDarkMode ? 'dark' : 'light');
+    this.applyThemeClass();
+  }
+
+  private initializeTheme() {
+    this.isDarkMode = localStorage.getItem(this.themeStorageKey) === 'dark';
+    this.applyThemeClass();
+  }
+
+  private applyThemeClass() {
+    if (typeof document !== 'undefined') {
+      document.body.classList.toggle('dark-mode', this.isDarkMode);
+    }
   }
 }

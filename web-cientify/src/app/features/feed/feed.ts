@@ -20,6 +20,7 @@ export class Feed implements OnInit, OnDestroy {
   allPosts: Post[] = [];
   loading = false;
   currentUser: any = null;
+  isDarkMode = false;
   private destroy$ = new Subject<void>();
   // edición en línea
   editingPostId: string | null = null;
@@ -47,6 +48,7 @@ export class Feed implements OnInit, OnDestroy {
 
   // Posts guardados
   savedPosts: Post[] = [];
+  private readonly themeStorageKey = 'cientify-theme';
 
   constructor(
     private postService: PostService,
@@ -57,6 +59,7 @@ export class Feed implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
+    this.initializeTheme();
     this.loadUserProfile();
     this.subscribeToUserState();
     this.loadSavedPosts();
@@ -66,6 +69,23 @@ export class Feed implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  toggleTheme() {
+    this.isDarkMode = !this.isDarkMode;
+    localStorage.setItem(this.themeStorageKey, this.isDarkMode ? 'dark' : 'light');
+    this.applyThemeClass();
+  }
+
+  private initializeTheme() {
+    this.isDarkMode = localStorage.getItem(this.themeStorageKey) === 'dark';
+    this.applyThemeClass();
+  }
+
+  private applyThemeClass() {
+    if (typeof document !== 'undefined') {
+      document.body.classList.toggle('dark-mode', this.isDarkMode);
+    }
   }
 
   subscribeToUserState() {

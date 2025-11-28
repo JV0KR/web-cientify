@@ -37,12 +37,27 @@ export class UserService {
     return this.http.get<any>(`${this.api}`);
   }
 
-  follow(userId: string): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.api}/${userId}/follow`, {});
+  searchScientists(params: {
+    q?: string;
+    rol?: string;
+    page?: number;
+    limit?: number;
+  } = {}): Observable<any> {
+    const query = new URLSearchParams({
+      q: params.q || '',
+      rol: params.rol || 'cientifico',
+      limit: params.limit?.toString() || '50',
+      page: params.page?.toString() || '1',
+    });
+    return this.http.get<any>(`${this.api}/search?${query.toString()}`);
   }
 
-  unfollow(userId: string): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.api}/${userId}/unfollow`, {});
+  follow(userId: string): Observable<{ message: string; target?: UserProfile; following?: number }> {
+    return this.http.post<{ message: string; target?: UserProfile; following?: number }>(`${this.api}/${userId}/follow`, {});
+  }
+
+  unfollow(userId: string): Observable<{ message: string; target?: UserProfile; following?: number }> {
+    return this.http.post<{ message: string; target?: UserProfile; following?: number }>(`${this.api}/${userId}/unfollow`, {});
   }
 
   getUserById(userId: string): Observable<any> {

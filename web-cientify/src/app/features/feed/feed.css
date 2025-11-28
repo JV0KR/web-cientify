@@ -71,6 +71,17 @@
   box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
 }
 
+.theme-toggle {
+  background: #f4f6fb;
+  color: #111827;
+  border: 2px solid transparent;
+}
+
+.theme-toggle:hover {
+  background: #e2e8f0;
+  box-shadow: none;
+}
+
 .btn-small {
   padding: 8px 16px;
   font-size: 14px;
@@ -152,6 +163,88 @@ textarea.form-control {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.feed-container.dark-mode {
+  background: radial-gradient(circle at top, #0f172a 0%, #020617 70%);
+  color: #e2e8f0;
+}
+
+.feed-container.dark-mode .feed-header h1 {
+  color: #f8fafc;
+}
+
+.feed-container.dark-mode .theme-toggle {
+  background: #0f172a;
+  color: #f8fafc;
+  border-color: #1d4ed8;
+}
+
+.feed-container.dark-mode .filter-buttons .btn {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+.feed-container.dark-mode .filter-buttons .btn:hover {
+  background: #273449;
+}
+
+.feed-container.dark-mode .create-post-card,
+.feed-container.dark-mode .post-card {
+  background: #1e293b;
+  box-shadow: 0 20px 45px rgba(2, 6, 23, 0.6);
+}
+
+.feed-container.dark-mode .create-post-card h2,
+.feed-container.dark-mode .post-title,
+.feed-container.dark-mode .author-info strong {
+  color: #f8fafc;
+}
+
+.feed-container.dark-mode .form-group label,
+.feed-container.dark-mode .post-subtitle,
+.feed-container.dark-mode .post-summary,
+.feed-container.dark-mode .post-body,
+.feed-container.dark-mode .comment-content,
+.feed-container.dark-mode .post-date,
+.feed-container.dark-mode .comment-date {
+  color: #cbd5f5;
+}
+
+.feed-container.dark-mode .form-control,
+.feed-container.dark-mode .comment-input {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #f8fafc;
+}
+
+.feed-container.dark-mode .post-card {
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.feed-container.dark-mode .post-actions {
+  border-top-color: rgba(148, 163, 184, 0.3);
+}
+
+.feed-container.dark-mode .action-btn:hover {
+  background: #0f172a;
+}
+
+.feed-container.dark-mode .comment-item {
+  background: #0f172a;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.feed-container.dark-mode .comment-like-btn:hover {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.feed-container.dark-mode .btn-primary {
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+}
+
+.feed-container.dark-mode .file-link {
+  color: #38bdf8;
 }
 
 .post-card {
